@@ -116,3 +116,33 @@ export const selectTaskCompletionPercentage = (state: AppRootState): number => {
  */
 export const selectHighPriorityTasks = (state: AppRootState): Task[] =>
   selectTasksByPriority(state, Priority.HIGH);
+
+/**
+ * Select tasks due today
+ */
+export const selectTasksDueToday = (state: AppRootState): Task[] => {
+  const today = new Date();
+  const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+  
+  return state.tasks.items.filter((task) => {
+    if (!task.due_date) return false;
+    const dueDate = new Date(task.due_date);
+    return dueDate >= startOfDay && dueDate < endOfDay && task.status !== TaskStatus.COMPLETED;
+  });
+};
+
+/**
+ * Select tasks due this week (next 7 days)
+ */
+export const selectTasksDueThisWeek = (state: AppRootState): Task[] => {
+  const today = new Date();
+  const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const nextWeek = new Date(startOfDay.getTime() + 7 * 24 * 60 * 60 * 1000);
+  
+  return state.tasks.items.filter((task) => {
+    if (!task.due_date) return false;
+    const dueDate = new Date(task.due_date);
+    return dueDate > startOfDay && dueDate <= nextWeek && task.status !== TaskStatus.COMPLETED;
+  });
+};

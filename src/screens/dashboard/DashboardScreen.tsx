@@ -14,18 +14,24 @@ import {
   selectPendingTaskCount,
   selectCompletedTaskCount,
   selectOverdueTasks,
+  selectTasksDueToday,
+  selectTasksDueThisWeek,
+  selectHighPriorityTasks,
 } from '../../redux/selectors/tasksSelectors';
 import {
   selectAchievedGoalCount,
   selectActiveGoalCount,
   selectAverageGoalProgress,
+  selectActiveGoalsSortedByProgress,
+  selectOverdueGoals,
+  selectGoalsExpiringSoon,
 } from '../../redux/selectors/goalsSelectors';
 import {
   selectCurrentStreak,
   selectLongestStreak,
   selectIsStreakActive,
 } from '../../redux/selectors/streaksSelectors';
-import { DashboardCard, StreakCard, StatCard, ProgressBar } from '../../components/dashboard';
+import { DashboardCard, StreakCard, StatCard, ProgressBar, GoalProgressCard, SummaryCard } from '../../components/dashboard';
 import { COLORS } from '../../constants';
 
 export const DashboardScreen: React.FC = () => {
@@ -40,11 +46,17 @@ export const DashboardScreen: React.FC = () => {
   const pendingTasks = useSelector(selectPendingTaskCount);
   const completedTasks = useSelector(selectCompletedTaskCount);
   const overdueTasks = useSelector(selectOverdueTasks).length;
+  const tasksDueToday = useSelector(selectTasksDueToday);
+  const tasksDueThisWeek = useSelector(selectTasksDueThisWeek);
+  const highPriorityTasks = useSelector(selectHighPriorityTasks);
 
   // Get goal stats
   const activeGoals = useSelector(selectActiveGoalCount);
   const achievedGoals = useSelector(selectAchievedGoalCount);
   const goalProgress = useSelector(selectAverageGoalProgress);
+  const activeGoalsSorted = useSelector(selectActiveGoalsSortedByProgress);
+  const overdueGoals = useSelector(selectOverdueGoals);
+  const expiringSoonGoals = useSelector(selectGoalsExpiringSoon);
 
   // Get streak stats
   const currentStreak = useSelector(selectCurrentStreak);
@@ -149,18 +161,114 @@ export const DashboardScreen: React.FC = () => {
         />
       </DashboardCard>
 
-      {/* Summary Cards */}
-      <DashboardCard>
-        <View style={styles.summaryItem}>
-          <View style={styles.summaryIcon}>
-            <Icon name="lightning-bolt" size={20} color="#FF9500" />
+      {/* Active Goals List Section */}
+      {activeGoalsSorted.length > 0 && (
+        <View>
+          <View style={styles.goalListHeader}>
+            <Text style={styles.goalListTitle}>Active Goals ({activeGoalsSorted.length})</Text>
+            {(overdueGoals.length > 0 || expiringSoonGoals.length > 0) && (
+              <View style={styles.goalWarningBadge}>
+                <Icon name="alert-circle" size={14} color={COLORS.DANGER} />
+                <Text style={styles.goalWarningText}>
+                  {overdueGoals.length > 0
+                    ? `${overdueGoals.length} overdue`
+                    : `${expiringSoonGoals.length} expiring soon`}
+                </Text>
+              </View>
+            )}
           </View>
-          <View style={styles.summaryContent}>
-            <Text style={styles.summaryTitle}>Keep Your Streak Going</Text>
-            <Text style={styles.summaryText}>Complete a task today to maintain your streak</Text>
-          </View>
+          {activeGoalsSorted.map((goal) => (
+            <GoalProgressCard key={goal.id} goal={goal} showChevron />
+          ))}
         </View>
-      </DashboardCard>
+      )}
+
+      {/* Summary Cards Section */}
+      <View style={styles.summarySection}>
+        <Text style={styles.summarySectionTitle}>Quick Overview</Text>
+
+        {/* Tasks Due Today Card */}
+        {tasksDueToday.length > 0 && (
+          <SummaryCard
+            icon="calendar-today"
+            iconColor={COLORS.PRIMARY}
+            backgroundColor="#EBF4FF"
+            title="Due Today"
+            description={`${tasksDueToday.length} task${tasksDueToday.length !== 1 ? 's' : ''} awaiting your attention`}
+            actionText="View tasks"
+            badge={tasksDueToday.length}
+            badgeColor={COLORS.PRIMARY}
+            onPress={() => {
+              // TODO: Navigate to tasks tab or filtered view
+            }}
+          />
+        )}
+
+        {/* Tasks Due This Week Card */}
+        {tasksDueThisWeek.length > 0 && (
+          <SummaryCard
+            icon="calendar-range"
+            iconColor="#FF9500"
+            backgroundColor="#FFF8E8"
+            title="Due This Week"
+            description={`${tasksDueThisWeek.length} task${tasksDueThisWeek.length !== 1 ? 's' : ''} scheduled for this week`}
+            actionText="Upcoming tasks"
+            badge={tasksDueThisWeek.length}
+            badgeColor="#FF9500"
+            onPress={() => {
+              // TODO: Navigate to tasks tab or filtered view
+            }}
+          />
+        )}
+
+        {/* High Priority Tasks Card */}
+        {highPriorityTasks.length > 0 && (
+          <SummaryCard
+            icon="alert-circle"
+            iconColor={COLORS.DANGER}
+            backgroundColor="#FEF2F2"
+            title="High Priority"
+            description={`${highPriorityTasks.length} high-priority task${highPriorityTasks.length !== 1 ? 's' : ''} need focus`}
+            actionText="Review now"
+            badge={highPriorityTasks.length}
+            badgeColor={COLORS.DANGER}
+            onPress={() => {
+              // TODO: Navigate to high priority tasks
+            }}
+          />
+        )}
+
+        {/* Streak Maintenance Card */}
+        {isStreakActive && currentStreak > 0 && (
+          <SummaryCard
+            icon="lightning-bolt"
+            iconColor="#FF6B35"
+            backgroundColor="#FFF8F4"
+            title="Keep Your Streak"
+            description={`You're on a ${currentStreak}-day streak! Complete a task today to maintain it.`}
+            actionText="Complete a task"
+            badgeColor="#FF6B35"
+            onPress={() => {
+              // TODO: Navigate to tasks tab
+            }}
+          />
+        )}
+
+        {/* No Tasks Card */}
+        {tasksDueToday.length === 0 && tasksDueThisWeek.length === 0 && highPriorityTasks.length === 0 && (
+          <SummaryCard
+            icon="check-all"
+            iconColor={COLORS.SUCCESS}
+            backgroundColor="#F0FFF4"
+            title="All Caught Up!"
+            description="No urgent tasks right now. Great work on staying on top of things!"
+            badgeColor={COLORS.SUCCESS}
+            onPress={() => {
+              // TODO: Navigate to create new task
+            }}
+          />
+        )}
+      </View>
 
       {/* Bottom Spacing */}
       <View style={styles.bottomSpacing} />
@@ -248,6 +356,44 @@ const styles = StyleSheet.create({
   summaryText: {
     fontSize: 12,
     color: COLORS.TEXT_SECONDARY,
+  },
+  goalListHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  goalListTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.TEXT_PRIMARY,
+  },
+  goalWarningBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  goalWarningText: {
+    fontSize: 11,
+    color: COLORS.DANGER,
+    marginLeft: 4,
+    fontWeight: '600',
+  },
+  summarySection: {
+    paddingVertical: 8,
+  },
+  summarySectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.TEXT_PRIMARY,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginTop: 8,
   },
   bottomSpacing: {
     height: 30,

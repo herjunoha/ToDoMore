@@ -49,3 +49,37 @@ export const selectAverageGoalProgress = (state: AppRootState): number => {
   const totalProgress = goals.reduce((sum, goal) => sum + (goal.progress || 0), 0);
   return Math.round(totalProgress / goals.length);
 };
+
+/**
+ * Get active goals sorted by progress (descending)
+ * Excludes parent goals and shows only active goals with progress tracking
+ */
+export const selectActiveGoalsSortedByProgress = (state: AppRootState): Goal[] => {
+  return selectActiveGoals(state)
+    .filter((goal) => !goal.parent_goal_id) // Only parent goals
+    .sort((a, b) => (b.progress || 0) - (a.progress || 0));
+};
+
+/**
+ * Get goals that are overdue (deadline passed)
+ */
+export const selectOverdueGoals = (state: AppRootState): Goal[] => {
+  const now = new Date().getTime();
+  return selectActiveGoals(state).filter((goal) => {
+    if (!goal.time_bound) return false;
+    return new Date(goal.time_bound).getTime() < now;
+  });
+};
+
+/**
+ * Get goals expiring soon (within 7 days)
+ */
+export const selectGoalsExpiringSoon = (state: AppRootState): Goal[] => {
+  const now = new Date().getTime();
+  const sevenDaysFromNow = now + 7 * 24 * 60 * 60 * 1000;
+  return selectActiveGoals(state).filter((goal) => {
+    if (!goal.time_bound) return false;
+    const deadline = new Date(goal.time_bound).getTime();
+    return deadline > now && deadline <= sevenDaysFromNow;
+  });
+};
