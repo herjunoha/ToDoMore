@@ -3,6 +3,24 @@
  * Exports all types and interfaces used throughout the app
  */
 
+// Re-export helper types
+export * from './helpers';
+
+// Re-export form types
+export * from './forms';
+
+// Re-export DAO types
+export * from './dao';
+
+// Re-export service types
+export * from './services';
+
+// Re-export UI types
+export * from './ui';
+
+// Re-export navigation types
+export * from './navigation';
+
 // Status enums and types
 export enum TaskStatus {
   PENDING = 'pending',
