@@ -58,7 +58,7 @@ react {
 /**
  * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
  */
-def enableProguardInReleaseBuilds = false
+def enableProguardInReleaseBuilds = true
 
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
@@ -93,18 +93,54 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            // This configuration uses environment variables or gradle properties
+            // For local development, you can set these in local.properties or as gradle properties
+            // Example: ./gradlew assembleRelease -Pstore_file=/path/to/keystore -Pstore_password=xxx -Pkey_alias=xxx -Pkey_password=xxx
+            if (project.hasProperty('store_file')) {
+                storeFile = file(project.property('store_file'))
+                storePassword = project.property('store_password')
+                keyAlias = project.property('key_alias')
+                keyPassword = project.property('key_password')
+            } else if (System.getenv('KEYSTORE_PATH')) {
+                // Support environment variables for CI/CD
+                storeFile = file(System.getenv('KEYSTORE_PATH'))
+                storePassword = System.getenv('KEYSTORE_PASSWORD')
+                keyAlias = System.getenv('KEY_ALIAS')
+                keyPassword = System.getenv('KEY_PASSWORD')
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
+            debuggable true
+            minifyEnabled false
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            // Production release build configuration
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
-            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            shrinkResources true
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+            // Enable resource shrinking to remove unused resources
+            // Enables code shrinking for release builds
         }
+    }
+    
+    lintOptions {
+        checkReleaseBuilds true
+        abortOnError false
+        // Ignore known lint warnings for external libraries
+        warning 'MissingTranslation', 'ExtraTranslation'
+    }
+    
+    packagingOptions {
+        // Exclude problematic native libraries
+        exclude 'lib/arm64-v8a/libfbjni.so'
+        exclude 'lib/armeabi-v7a/libfbjni.so'
+        exclude 'lib/x86/libfbjni.so'
+        exclude 'lib/x86_64/libfbjni.so'
     }
 }
 

@@ -173,9 +173,6 @@ const streaksSlice = createSlice({
       })
       .addCase(streakThunks.updateStreakAsync.fulfilled, (state, action) => {
         state.streak = action.payload;
-      })
-      .addCase(streakThunks.fetchStreak.rejected, (state, action) => {
-        state.error = action.payload as string;
       });
   },
 });
