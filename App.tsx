@@ -14,18 +14,23 @@ import { NavigationContainer } from '@react-navigation/native';
 import { Provider } from 'react-redux';
 import { store } from './src/redux/store';
 import { RootNavigator } from './src/navigation';
-import { COLORS } from './src/constants';
+import { ErrorBoundary, ToastContainer } from './src/components';
+import { COLORS } from './src/theme';
 
 function App() {
   return (
-    <Provider store={store}>
-      <SafeAreaProvider>
-        <NavigationContainer>
-          <StatusBar barStyle="light-content" backgroundColor={COLORS.PRIMARY} />
-          <RootNavigator />
-        </NavigationContainer>
-      </SafeAreaProvider>
-    </Provider>
+    <ErrorBoundary>
+      <Provider store={store}>
+        <SafeAreaProvider>
+          <ToastContainer>
+            <NavigationContainer>
+              <StatusBar barStyle="light-content" backgroundColor={COLORS.PRIMARY} />
+              <RootNavigator />
+            </NavigationContainer>
+          </ToastContainer>
+        </SafeAreaProvider>
+      </Provider>
+    </ErrorBoundary>
   );
 }
 

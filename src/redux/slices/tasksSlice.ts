@@ -123,6 +123,33 @@ const tasksSlice = createSlice({
       .addCase(taskThunks.fetchPendingTasks.fulfilled, (state, action) => {
         state.items = action.payload;
         state.loading = false;
+      })
+      .addCase(taskThunks.updateTaskStatusWithGoalProgress.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(taskThunks.updateTaskStatusWithGoalProgress.fulfilled, (state, action) => {
+        const index = state.items.findIndex((t) => t.id === action.payload.id);
+        if (index !== -1) {
+          state.items[index] = action.payload;
+        }
+        state.loading = false;
+      })
+      .addCase(taskThunks.updateTaskStatusWithGoalProgress.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(taskThunks.deleteTaskWithGoalProgress.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(taskThunks.deleteTaskWithGoalProgress.fulfilled, (state, action) => {
+        state.items = state.items.filter((t) => t.id !== action.payload);
+        state.loading = false;
+      })
+      .addCase(taskThunks.deleteTaskWithGoalProgress.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });

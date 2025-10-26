@@ -16,6 +16,7 @@ export type GoalStackParamList = {
   };
   GoalForm: {
     goalId?: string;
+    parentGoalId?: string;
   };
 };
 

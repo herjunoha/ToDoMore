@@ -1,0 +1,147 @@
+/**
+ * Typography System
+ * Font sizes, weights, and text styles
+ */
+
+export const TYPOGRAPHY = {
+  // Font families
+  FONT_FAMILY: {
+    REGULAR: 'System',
+    MEDIUM: 'System',
+    SEMIBOLD: 'System',
+    BOLD: 'System',
+  },
+
+  // Font sizes
+  FONT_SIZE: {
+    // Headings
+    H1: 32,
+    H2: 28,
+    H3: 24,
+    H4: 20,
+    H5: 18,
+    H6: 16,
+
+    // Body text
+    BODY_LARGE: 16,
+    BODY_MEDIUM: 14,
+    BODY_SMALL: 12,
+
+    // Labels
+    LABEL_LARGE: 14,
+    LABEL_MEDIUM: 12,
+    LABEL_SMALL: 11,
+
+    // Captions
+    CAPTION: 12,
+    CAPTION_SMALL: 10,
+  },
+
+  // Font weights
+  FONT_WEIGHT: {
+    REGULAR: '400' as const,
+    MEDIUM: '500' as const,
+    SEMIBOLD: '600' as const,
+    BOLD: '700' as const,
+    EXTRABOLD: '800' as const,
+  },
+
+  // Line heights
+  LINE_HEIGHT: {
+    TIGHT: 1.2,
+    NORMAL: 1.5,
+    RELAXED: 1.75,
+    LOOSE: 2,
+  },
+
+  // Letter spacing
+  LETTER_SPACING: {
+    TIGHT: -0.5,
+    NORMAL: 0,
+    WIDE: 0.5,
+    WIDER: 1,
+  },
+} as const;
+
+/**
+ * Predefined text styles for consistent typography
+ */
+export const TEXT_STYLES = {
+  // Headings
+  H1: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.H1,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
+    lineHeight: TYPOGRAPHY.FONT_SIZE.H1 * TYPOGRAPHY.LINE_HEIGHT.TIGHT,
+  },
+  H2: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.H2,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
+    lineHeight: TYPOGRAPHY.FONT_SIZE.H2 * TYPOGRAPHY.LINE_HEIGHT.TIGHT,
+  },
+  H3: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.H3,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.SEMIBOLD,
+    lineHeight: TYPOGRAPHY.FONT_SIZE.H3 * TYPOGRAPHY.LINE_HEIGHT.TIGHT,
+  },
+  H4: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.H4,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.SEMIBOLD,
+    lineHeight: TYPOGRAPHY.FONT_SIZE.H4 * TYPOGRAPHY.LINE_HEIGHT.NORMAL,
+  },
+  H5: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.H5,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.SEMIBOLD,
+    lineHeight: TYPOGRAPHY.FONT_SIZE.H5 * TYPOGRAPHY.LINE_HEIGHT.NORMAL,
+  },
+  H6: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.H6,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
+    lineHeight: TYPOGRAPHY.FONT_SIZE.H6 * TYPOGRAPHY.LINE_HEIGHT.NORMAL,
+  },
+
+  // Body text
+  BODY_LARGE: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.BODY_LARGE,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.REGULAR,
+    lineHeight: TYPOGRAPHY.FONT_SIZE.BODY_LARGE * TYPOGRAPHY.LINE_HEIGHT.NORMAL,
+  },
+  BODY_MEDIUM: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.BODY_MEDIUM,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.REGULAR,
+    lineHeight: TYPOGRAPHY.FONT_SIZE.BODY_MEDIUM * TYPOGRAPHY.LINE_HEIGHT.NORMAL,
+  },
+  BODY_SMALL: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.BODY_SMALL,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.REGULAR,
+    lineHeight: TYPOGRAPHY.FONT_SIZE.BODY_SMALL * TYPOGRAPHY.LINE_HEIGHT.NORMAL,
+  },
+
+  // Labels
+  LABEL_LARGE: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.LABEL_LARGE,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
+    lineHeight: TYPOGRAPHY.FONT_SIZE.LABEL_LARGE * TYPOGRAPHY.LINE_HEIGHT.NORMAL,
+  },
+  LABEL_MEDIUM: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.LABEL_MEDIUM,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
+    lineHeight: TYPOGRAPHY.FONT_SIZE.LABEL_MEDIUM * TYPOGRAPHY.LINE_HEIGHT.NORMAL,
+  },
+  LABEL_SMALL: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.LABEL_SMALL,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.SEMIBOLD,
+    lineHeight: TYPOGRAPHY.FONT_SIZE.LABEL_SMALL * TYPOGRAPHY.LINE_HEIGHT.NORMAL,
+  },
+
+  // Captions
+  CAPTION: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.CAPTION,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.REGULAR,
+    lineHeight: TYPOGRAPHY.FONT_SIZE.CAPTION * TYPOGRAPHY.LINE_HEIGHT.NORMAL,
+  },
+  CAPTION_SMALL: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.CAPTION_SMALL,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.REGULAR,
+    lineHeight: TYPOGRAPHY.FONT_SIZE.CAPTION_SMALL * TYPOGRAPHY.LINE_HEIGHT.NORMAL,
+  },
+} as const;

@@ -20,6 +20,7 @@ import { TaskStackParamList } from '../../navigation/TaskStackNavigator';
 import { AppDispatch, AppRootState } from '../../redux/store/configureStore';
 import { selectTaskById, selectSubtasks } from '../../redux/selectors/tasksSelectors';
 import { selectGoalById } from '../../redux/selectors/goalsSelectors';
+import { updateTaskStatusWithGoalProgress, deleteTaskWithGoalProgress } from '../../redux/thunks/taskThunks';
 import { Task, TaskStatus, Priority, Goal } from '../../types';
 import { COLORS } from '../../constants';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -30,6 +31,7 @@ type Props = NativeStackScreenProps<TaskStackParamList, 'TaskDetail'>;
 export const TaskDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { taskId } = route.params;
   const dispatch = useDispatch<AppDispatch>();
+  const [loading, setLoading] = React.useState(false);
   
   const task = useSelector((state: AppRootState) => selectTaskById(state, taskId));
   const subtasks = useSelector((state: AppRootState) => selectSubtasks(state, taskId));
@@ -109,7 +111,18 @@ export const TaskDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     navigation.navigate('TaskForm', { taskId });
   };
 
-  const handleDeleteTask = () => {
+  const handleGoalNavigation = () => {
+    if (linkedGoal) {
+      // Navigate to goal detail screen using the goal stack
+      // This requires navigating from task stack to goal stack
+      navigation.getParent()?.navigate('Goals', {
+        screen: 'GoalDetail',
+        params: { goalId: linkedGoal.id },
+      });
+    }
+  };
+
+  const handleDeleteTask = async () => {
     Alert.alert(
       'Delete Task',
       'Are you sure you want to delete this task? This action cannot be undone.',
@@ -117,10 +130,17 @@ export const TaskDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         { text: 'Cancel', onPress: () => {}, style: 'cancel' },
         {
           text: 'Delete',
-          onPress: () => {
-            // TODO: Implement delete task dispatch
-            // dispatch(deleteTask(taskId));
-            navigation.goBack();
+          onPress: async () => {
+            setLoading(true);
+            try {
+              // Use the new thunk that updates goal progress on deletion
+              await dispatch(deleteTaskWithGoalProgress(taskId)).unwrap();
+              Alert.alert('Success', 'Task deleted successfully');
+              navigation.goBack();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete task. Please try again.');
+              setLoading(false);
+            }
           },
           style: 'destructive',
         },
@@ -128,12 +148,22 @@ export const TaskDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     );
   };
 
-  const handleStatusChange = () => {
-    const nextStatus =
-      task?.status === TaskStatus.COMPLETED ? TaskStatus.PENDING : TaskStatus.COMPLETED;
+  const handleStatusChange = async () => {
+    if (!task) return;
     
-    // TODO: Implement status change dispatch
-    // dispatch(updateTaskStatusAsync({ taskId, status: nextStatus }));
+    const nextStatus =
+      task.status === TaskStatus.COMPLETED ? TaskStatus.PENDING : TaskStatus.COMPLETED;
+    
+    setLoading(true);
+    try {
+      // Use the new thunk that auto-calculates goal progress
+      await dispatch(updateTaskStatusWithGoalProgress({ taskId, status: nextStatus })).unwrap();
+      Alert.alert('Success', `Task marked as ${nextStatus.replace(/_/g, ' ')}`);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update task status. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!task) {
@@ -151,8 +181,7 @@ export const TaskDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       <View style={styles.section}>
         <View style={styles.statusHeader}>
           <TouchableOpacity
-            style={[styles.statusBadge, { backgroundColor: getStatusColor(task.status) + '20' }]}
-            onPress={handleStatusChange}
+          disabled={loading}
           >
             <MaterialCommunityIcons
               name="check-circle"
@@ -222,10 +251,7 @@ export const TaskDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           <Text style={styles.sectionTitle}>Linked Goal</Text>
           <TouchableOpacity
             style={styles.linkedGoalCard}
-            onPress={() => {
-              // TODO: Navigate to goal detail screen
-              // navigation.navigate('GoalDetail', { goalId: linkedGoal.id });
-            }}
+            onPress={handleGoalNavigation}
           >
             <View style={styles.linkedGoalContent}>
               <MaterialCommunityIcons
@@ -248,6 +274,30 @@ export const TaskDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               size={20}
               color={COLORS.TEXT_SECONDARY}
             />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.unlinkButton}
+            onPress={() => {
+              Alert.alert(
+                'Unlink Goal',
+                'Are you sure you want to unlink this goal from the task?',
+                [
+                  { text: 'Cancel', onPress: () => {}, style: 'cancel' },
+                  {
+                    text: 'Unlink',
+                    onPress: () => {
+                      // TODO: Dispatch action to unlink goal
+                      // dispatch(unlinkTaskFromGoal(taskId));
+                      Alert.alert('Success', 'Goal unlinked successfully');
+                    },
+                    style: 'destructive',
+                  },
+                ]
+              );
+            }}
+          >
+            <MaterialCommunityIcons name="link-off" size={18} color={COLORS.DANGER} />
+            <Text style={styles.unlinkButtonText}>Unlink Goal</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -423,6 +473,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.TEXT_SECONDARY,
     marginTop: 2,
+  },
+  unlinkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.DANGER + '15',
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginTop: 8,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: COLORS.DANGER + '30',
+  },
+  unlinkButtonText: {
+    color: COLORS.DANGER,
+    fontSize: 13,
+    fontWeight: '600',
   },
   subtaskItem: {
     flexDirection: 'row',

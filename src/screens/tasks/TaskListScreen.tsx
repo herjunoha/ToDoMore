@@ -14,10 +14,13 @@ import {
   Pressable,
   ActivityIndicator,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, AppRootState } from '../../redux/store/configureStore';
 import { fetchTasks } from '../../redux/thunks/taskThunks';
+import { updateTaskStatus } from '../../redux/thunks/taskThunks';
+import { incrementStreakAsync } from '../../redux/thunks/streakThunks';
 import {
   selectAllTasks,
   selectTasksLoading,
@@ -27,6 +30,7 @@ import {
   selectInProgressTasks,
 } from '../../redux/selectors/tasksSelectors';
 import { selectCurrentUserId } from '../../redux/selectors/authSelectors';
+import { selectStreak } from '../../redux/selectors/streaksSelectors';
 import { Task, TaskStatus, Priority } from '../../types';
 import { COLORS } from '../../constants';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -38,9 +42,10 @@ interface TaskItemProps {
   task: Task;
   onPress?: () => void;
   onStatusChange?: (taskId: string, newStatus: TaskStatus) => void;
+  isUpdating?: boolean;
 }
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, onPress, onStatusChange }) => {
+const TaskItem: React.FC<TaskItemProps> = ({ task, onPress, onStatusChange, isUpdating }) => {
   const getStatusColor = (status: TaskStatus): string => {
     switch (status) {
       case TaskStatus.COMPLETED:
@@ -105,23 +110,31 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onPress, onStatusChange }) =>
         styles.taskItem,
         pressed && styles.taskItemPressed,
         task.status === TaskStatus.COMPLETED && styles.taskItemCompleted,
+        isUpdating && styles.taskItemUpdating,
       ]}
     >
       <TouchableOpacity
         onPress={() => {
-          if (onStatusChange && task.status !== TaskStatus.COMPLETED) {
-            onStatusChange(task.id, TaskStatus.COMPLETED);
-          } else if (onStatusChange && task.status === TaskStatus.COMPLETED) {
-            onStatusChange(task.id, TaskStatus.PENDING);
+          if (onStatusChange && !isUpdating) {
+            if (task.status !== TaskStatus.COMPLETED) {
+              onStatusChange(task.id, TaskStatus.COMPLETED);
+            } else {
+              onStatusChange(task.id, TaskStatus.PENDING);
+            }
           }
         }}
         style={styles.statusButton}
+        disabled={isUpdating}
       >
-        <MaterialCommunityIcons
-          name={getStatusIcon(task.status)}
-          size={24}
-          color={getStatusColor(task.status)}
-        />
+        {isUpdating ? (
+          <ActivityIndicator size="small" color={COLORS.PRIMARY} />
+        ) : (
+          <MaterialCommunityIcons
+            name={getStatusIcon(task.status)}
+            size={24}
+            color={getStatusColor(task.status)}
+          />
+        )}
       </TouchableOpacity>
 
       <View style={styles.taskContent}>
@@ -193,8 +206,10 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onPress, onStatusChange }) =>
 export const TaskListScreen: React.FC = ({ navigation }: any) => {
   const dispatch = useDispatch<AppDispatch>();
   const userId = useSelector(selectCurrentUserId);
+  const userStreak = useSelector((state: AppRootState) => selectStreak(state));
   const [filter, setFilter] = useState<FilterType>('all');
   const [refreshing, setRefreshing] = useState(false);
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
 
   const allTasks = useSelector(selectAllTasks);
   const completedTasks = useSelector(selectCompletedTasks);
@@ -234,12 +249,33 @@ export const TaskListScreen: React.FC = ({ navigation }: any) => {
   const filteredTasks = getFilteredTasks();
 
   const handleTaskPress = (taskId: string) => {
-    navigation?.navigate('TaskDetails', { taskId });
+    navigation?.navigate('TaskDetail', { taskId });
   };
 
-  const handleStatusChange = (taskId: string, newStatus: TaskStatus) => {
-    // TODO: Implement status change thunk dispatch
-    // dispatch(updateTaskStatusAsync({ taskId, status: newStatus }));
+  const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
+    setUpdatingTaskId(taskId);
+    try {
+      await dispatch(updateTaskStatus({ taskId, status: newStatus })).unwrap();
+      
+      // Increment streak if completing a task
+      if (newStatus === TaskStatus.COMPLETED && userStreak) {
+        try {
+          await dispatch(
+            incrementStreakAsync({
+              streakId: userStreak.id,
+              date: new Date().toISOString(),
+            })
+          ).unwrap();
+        } catch (streakError) {
+          // Streak increment failed but task was updated, don't show error
+          console.warn('Failed to increment streak:', streakError);
+        }
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update task status. Please try again.');
+    } finally {
+      setUpdatingTaskId(null);
+    }
   };
 
   const renderEmpty = () => (
@@ -340,6 +376,7 @@ export const TaskListScreen: React.FC = ({ navigation }: any) => {
               task={item}
               onPress={() => handleTaskPress(item.id)}
               onStatusChange={handleStatusChange}
+              isUpdating={updatingTaskId === item.id}
             />
           )}
           ListEmptyComponent={renderEmpty()}
@@ -500,6 +537,9 @@ const styles = StyleSheet.create({
   loader: {
     flex: 1,
     justifyContent: 'center',
+  },
+  taskItemUpdating: {
+    opacity: 0.7,
   },
 });
 

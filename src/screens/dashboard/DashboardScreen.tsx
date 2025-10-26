@@ -8,7 +8,7 @@ import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native
 import { useDispatch, useSelector } from 'react-redux';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { AppDispatch } from '../../redux/store/configureStore';
-import { selectCurrentUsername } from '../../redux/selectors/authSelectors';
+import { selectCurrentUsername, selectCurrentUserId } from '../../redux/selectors/authSelectors';
 import {
   selectTaskCompletionPercentage,
   selectPendingTaskCount,
@@ -32,11 +32,13 @@ import {
   selectIsStreakActive,
 } from '../../redux/selectors/streaksSelectors';
 import { DashboardCard, StreakCard, StatCard, ProgressBar, GoalProgressCard, SummaryCard } from '../../components/dashboard';
+import { recalculateAllGoalProgress } from '../../redux/thunks/goalThunks';
 import { COLORS } from '../../constants';
 
 export const DashboardScreen: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [refreshing, setRefreshing] = React.useState(false);
+  const userId = useSelector(selectCurrentUserId);
 
   // Get user data
   const username = useSelector(selectCurrentUsername);
@@ -63,11 +65,27 @@ export const DashboardScreen: React.FC = () => {
   const longestStreak = useSelector(selectLongestStreak);
   const isStreakActive = useSelector(selectIsStreakActive);
 
+  // Sync goal progress when component mounts
+  React.useEffect(() => {
+    if (userId) {
+      // Recalculate all goal progress on app startup
+      dispatch(recalculateAllGoalProgress(userId)).catch((error) => {
+        console.warn('Failed to recalculate goal progress on startup:', error);
+      });
+    }
+  }, [userId, dispatch]);
+
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    // TODO: Implement refresh logic to reload data from database
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    // Recalculate all goal progress on refresh
+    if (userId) {
+      dispatch(recalculateAllGoalProgress(userId)).finally(() => {
+        setRefreshing(false);
+      });
+    } else {
+      setRefreshing(false);
+    }
+  }, [userId, dispatch]);
 
   return (
     <ScrollView

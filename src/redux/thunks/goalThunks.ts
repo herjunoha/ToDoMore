@@ -1,9 +1,11 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { Goal, GoalStatus } from '../../types';
 import { GoalDAO } from '../../services/database/GoalDAO';
+import { TaskDAO } from '../../services/database/TaskDAO';
 import { ERROR_MESSAGES } from '../../constants';
 
 const goalDAO = new GoalDAO();
+const taskDAO = new TaskDAO();
 
 /**
  * Goal creation input
@@ -230,6 +232,141 @@ export const fetchAchievedGoals = createAsyncThunk<Goal[], string>(
         GoalStatus.ACHIEVED,
       ]);
       return goals;
+    } catch (error) {
+      return rejectWithValue(ERROR_MESSAGES.DATABASE_ERROR);
+    }
+  }
+);
+
+/**
+ * Calculate goal progress based on linked tasks
+ * Progress = (completed_tasks / total_tasks) * 100
+ */
+export const calculateGoalProgress = createAsyncThunk<
+  Goal,
+  string
+>(
+  'goals/calculateProgress',
+  async (goalId: string, { rejectWithValue }) => {
+    try {
+      // Fetch the goal
+      const goal = await goalDAO.findById(goalId);
+      if (!goal) {
+        return rejectWithValue('Goal not found');
+      }
+
+      // Fetch all linked tasks
+      const linkedTasks = await taskDAO.findByGoalId(goalId);
+      
+      // Calculate progress based on task completion
+      let progress = 0;
+      if (linkedTasks.length > 0) {
+        const completedTasks = linkedTasks.filter(
+          (task) => task.status === 'completed'
+        ).length;
+        progress = Math.round((completedTasks / linkedTasks.length) * 100);
+      }
+
+      // Update goal progress in database
+      const success = await goalDAO.update(goalId, { progress });
+      if (!success) {
+        return rejectWithValue('Failed to update goal progress');
+      }
+
+      // Fetch and return updated goal
+      const updatedGoal = await goalDAO.findById(goalId);
+      if (!updatedGoal) {
+        return rejectWithValue('Goal not found after update');
+      }
+      
+      return updatedGoal;
+    } catch (error) {
+      return rejectWithValue(ERROR_MESSAGES.DATABASE_ERROR);
+    }
+  }
+);
+
+/**
+ * Delete a goal and its sub-goals
+ * Removes the goal and all associated sub-goals from the database
+ */
+export const deleteGoalWithSubGoals = createAsyncThunk<
+  string,
+  string
+>(
+  'goals/deleteWithSubGoals',
+  async (goalId: string, { rejectWithValue }) => {
+    try {
+      // Fetch all sub-goals first
+      const subGoals = await goalDAO.findSubGoals(goalId);
+
+      // Delete all sub-goals recursively
+      for (const subGoal of subGoals) {
+        const success = await goalDAO.delete(subGoal.id);
+        if (!success) {
+          return rejectWithValue('Failed to delete sub-goal: ' + subGoal.id);
+        }
+      }
+
+      // Delete the main goal
+      const success = await goalDAO.delete(goalId);
+      if (!success) {
+        return rejectWithValue('Failed to delete goal');
+      }
+
+      return goalId;
+    } catch (error) {
+      return rejectWithValue(ERROR_MESSAGES.DATABASE_ERROR);
+    }
+  }
+);
+
+/**
+ * Recalculate progress for all goals based on linked tasks
+ * Useful for batch updates when tasks are marked complete
+ */
+export const recalculateAllGoalProgress = createAsyncThunk<
+  Goal[],
+  string
+>(
+  'goals/recalculateAllProgress',
+  async (userId: string, { rejectWithValue }) => {
+    try {
+      // Fetch all user goals
+      const goals = await goalDAO.findAllByUserId(userId);
+      const updatedGoals: Goal[] = [];
+
+      for (const goal of goals) {
+        // Fetch linked tasks for each goal
+        const linkedTasks = await taskDAO.findByGoalId(goal.id);
+        
+        // Calculate progress
+        let progress = 0;
+        if (linkedTasks.length > 0) {
+          const completedTasks = linkedTasks.filter(
+            (task) => task.status === 'completed'
+          ).length;
+          progress = Math.round((completedTasks / linkedTasks.length) * 100);
+        }
+
+        // Update goal if progress changed
+        if (progress !== goal.progress) {
+          const success = await goalDAO.update(goal.id, { progress });
+          if (!success) {
+            console.warn('Failed to update progress for goal:', goal.id);
+          }
+          
+          // Fetch updated goal
+          const updatedGoal = await goalDAO.findById(goal.id);
+          if (updatedGoal) {
+            updatedGoals.push(updatedGoal);
+          }
+        } else {
+          updatedGoals.push(goal);
+        }
+      }
+
+      return updatedGoals;
     } catch (error) {
       return rejectWithValue(ERROR_MESSAGES.DATABASE_ERROR);
     }

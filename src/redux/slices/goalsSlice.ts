@@ -207,6 +207,45 @@ const goalsSlice = createSlice({
       .addCase(goalThunks.fetchAchievedGoals.fulfilled, (state, action) => {
         state.items = action.payload;
         state.loading = false;
+      })
+      .addCase(goalThunks.calculateGoalProgress.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(goalThunks.calculateGoalProgress.fulfilled, (state, action) => {
+        const index = state.items.findIndex((g) => g.id === action.payload.id);
+        if (index !== -1) {
+          state.items[index] = action.payload;
+        }
+        state.loading = false;
+      })
+      .addCase(goalThunks.calculateGoalProgress.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(goalThunks.deleteGoalWithSubGoals.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(goalThunks.deleteGoalWithSubGoals.fulfilled, (state, action) => {
+        state.items = state.items.filter((g) => g.id !== action.payload);
+        state.loading = false;
+      })
+      .addCase(goalThunks.deleteGoalWithSubGoals.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(goalThunks.recalculateAllGoalProgress.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(goalThunks.recalculateAllGoalProgress.fulfilled, (state, action) => {
+        state.items = action.payload;
+        state.loading = false;
+      })
+      .addCase(goalThunks.recalculateAllGoalProgress.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });
